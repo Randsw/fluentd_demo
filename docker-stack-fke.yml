@@ -1,0 +1,98 @@
+version: '3.7'
+
+networks:
+  logging:
+    name: logging
+    driver: overlay
+    attachable: true
+
+
+services:
+
+  fluentd:
+    image: wshihadeh/fluentd:1.0.0
+    hostname: fluentd
+    volumes:
+     - fluentd-buffer:/fluentd/log
+     - /var/lib/docker/containers:/var/lib/docker/containers
+     - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - FLUENTD_CONF=fluentd.conf
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_SCHEME=http
+      - ENVIRONMENT=development.local
+    deploy:
+      mode: global
+    logging:
+      driver: json-file
+      options:
+        "max-size": "10m"
+        "max-file": "5"
+    networks:
+      - logging
+
+  busylogbox:
+    image: wshihadeh/busylogbox
+    logging:
+      driver: json-file
+      options:
+        "max-size": "10m"
+        "max-file": "5"
+    networks:
+      - logging
+
+  elasticsearch:
+    image: elastic/elasticsearch:7.5.1
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      nproc: 3000
+      nofile: 65536
+      memlock: -1
+    logging:
+      driver: json-file
+      options:
+        "max-size": "10m"
+        "max-file": "5"
+    deploy:
+      update_config:
+        delay: 10s
+        order: start-first
+        parallelism: 1
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+    networks:
+      - logging
+
+  kibana:
+    image: elastic/kibana:7.5.1
+    ports:
+      - 5601:5601
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      update_config:
+        delay: 10s
+        order: start-first
+        parallelism: 1
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+    environment:
+        ELASTICSEARCH_URL: http://elasticsearch:9200
+    networks:
+      - logging
+
+volumes:
+  fluentd-buffer:
