@@ -10,7 +10,7 @@ networks:
 services:
 
   fluentd:
-    image: wshihadeh/fluentd:1.0.0
+    image: wshihadeh/fluentd:1.0.1
     hostname: fluentd
     volumes:
      - fluentd-buffer:/fluentd/log
