@@ -42,15 +42,39 @@ services:
     networks:
       - logging
 
+  errbit:
+    image: wshihadeh/errbit:production-logs
+    ports:
+      - "9090:8080"
+    environment:
+      - PORT=8080
+      - RACK_ENV=production
+      - MONGO_URL=mongodb://mongo:27017/errbit
+    logging:
+      driver: json-file
+      options:
+        "max-size": "10m"
+        "max-file": "5"
+    networks:
+      - logging
+
+  mongo:
+    image: mongo:4.1
+    ports:
+      - "27017"
+    logging:
+      driver: json-file
+      options:
+        "max-size": "10m"
+        "max-file": "5"
+    networks:
+      - logging
+
   elasticsearch:
     image: elastic/elasticsearch:7.5.1
     environment:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      nproc: 3000
-      nofile: 65536
-      memlock: -1
     logging:
       driver: json-file
       options:
